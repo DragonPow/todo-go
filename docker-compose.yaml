@@ -1,0 +1,13 @@
+version: '3.8'
+
+services:
+  database:
+    container_name: database_postgresql
+    image: postgres:12.8
+    restart: always
+    environment:
+      - POSTGRE_USER=postgres
+      - POSTGRE_PASSWORD=111200
+      - POSTGRE_DB=todo-go
+    ports:
+      - 5432:5432
