@@ -1,4 +1,4 @@
-package Routes
+package router
 
 import (
 	"project1/domain"
