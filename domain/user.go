@@ -11,7 +11,7 @@ type User struct {
 	Username  string    `gorm:"column:usernames;not null;unique"`
 	Password  string    `gorm:"column:password;not null"`
 	Name      string    `gorm:"column:name;not null"`
-	CreatedAt time.Time `gorm:"column:created_at;default:time.Now().UTC()"`
+	CreatedAt time.Time `gorm:"column:created_at;"`
 }
 
 type UserRepository interface {

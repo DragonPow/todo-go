@@ -12,9 +12,12 @@ type Task struct {
 	Description string    `gorm:"column:description"`
 	IsDone      bool      `gorm:"column:is_done;default:false"`
 	DoneAt      time.Time `gorm:"column:done_at"`
-	CreatedAt   time.Time `gorm:"column:created_at;default:time.Now().UTC()"`
-	UserCreate  User      `gorm:"constrain:OnUpdate:NO ACTION,OnDelete:CASCADE"`
-	Tags        []Tag     `gorm:"constrain:OnUpdate:NO ACTION,OnDelete:SET NULL"`
+	CreatedAt   time.Time `gorm:"column:created_at"`
+
+	CreatorId   int32
+	UserCreator User `gorm:"foreignKey:CreatorId;constrain:OnUpdate:NO ACTION,OnDelete:CASCADE"`
+
+	Tags []Tag `gorm:"many2many:task_tags;constrain:OnUpdate:NO ACTION,OnDelete:SET NULL"`
 }
 
 type TaskRepository interface {

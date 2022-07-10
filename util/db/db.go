@@ -13,7 +13,7 @@ type Database struct {
 }
 
 func Init() *Database {
-	url := "postgres://postgres:password@localhost:5432/todo-go"
+	url := "postgres://postgres:111200@localhost:5432/todo-go"
 
 	db, err := gorm.Open(postgres.Open(url), &gorm.Config{})
 

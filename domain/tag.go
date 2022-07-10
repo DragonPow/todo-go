@@ -2,12 +2,14 @@ package domain
 
 import (
 	"context"
+	"time"
 )
 
 type Tag struct {
-	ID          int32  `gorm:"primaryKey;autoIncrement"`
-	Value       string `gorm:"column:value;not null;unique"`
-	Description string `gorm:"column:description"`
+	ID          int32     `gorm:"primaryKey;autoIncrement"`
+	Value       string    `gorm:"column:value;not null;unique"`
+	Description string    `gorm:"column:description"`
+	CreatedAt   time.Time `gorm:"column:created_at"`
 }
 
 type TagRepository interface {
