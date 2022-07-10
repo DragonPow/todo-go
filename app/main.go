@@ -1,21 +1,17 @@
 package main
 
 import (
-	"fmt"
-	"log"
-	"time"
-	
-	"github.com/gin-gonic/gin"
-	"net/http"
+	"project1/router"
+	"project1/util/db"
 
-	"db_setup" db
+	"github.com/gin-gonic/gin"
 )
 
-func main()  {
+func main() {
 	DB := db.Init()
-	defer DB.Close()
-	
+
 	server := gin.Default()
+	router.Init(server, *DB)
 
 	server.Run(":8080")
 }

@@ -1,17 +1,41 @@
 package router
 
 import (
+	"github.com/gin-gonic/gin"
+
 	"project1/domain"
 )
 
 type taskRoute struct {
-	usecase domain.TaskUsecase
+	taskUsecase domain.TaskUsecase
 }
 
-func (t *taskRoute) BuildRouteTask(router *gin.Engine) {
-	router.GET("/", t.Fetch)
-	router.GET("/:id", t.GetTaskByID)
-	router.POST("/", t.CreateTask)
-	router.DELETE("/:id", t.DeleteTask)
-	router.PUT("/:id", t.UpdateTask)
+func BuildTaskRoute(router *gin.RouterGroup, t domain.TaskUsecase) {
+	task := taskRoute{taskUsecase: t}
+
+	router.GET("/", task.Fetch)
+	router.GET("/:id", task.GetByID)
+	router.POST("/", task.Create)
+	router.DELETE("/:id", task.Delete)
+	router.PUT("/:id", task.Update)
+}
+
+func (t *taskRoute) Fetch(c *gin.Context) {
+
+}
+
+func (t *taskRoute) GetByID(c *gin.Context) {
+
+}
+
+func (t *taskRoute) Create(c *gin.Context) {
+
+}
+
+func (t *taskRoute) Delete(c *gin.Context) {
+
+}
+
+func (t *taskRoute) Update(c *gin.Context) {
+
 }

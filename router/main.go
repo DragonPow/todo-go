@@ -1,17 +1,24 @@
 package router
 
 import (
+	repository "project1/repository/postgresql"
+	"project1/usecase"
+	"project1/util/db"
+
 	"github.com/gin-gonic/gin"
-	"net/http"
 )
 
-func SetupRouter() *gin.Engine {
-	server := gin.Default()
+func Init(server *gin.Engine, DB db.Database) {
+	taskRepo := repository.NewTaskRepository(DB)
+	tagRepo := repository.NewTagRepository(DB)
+	userRepo := repository.NewUserRepository(DB)
 
-	BuildRouteTask(server.Group("/task"))
-	// BuildRouteTag(server.Group("/tag"))
-	// BuildRouteUser(server.Group("/user"))
-	CreateRoute(server)
+	taskUsecase := usecase.NewTaskUsecase(taskRepo, userRepo)
+	tagUsecase := usecase.NewTagUsecase(tagRepo)
+	userUsecase := usecase.NewUserUsecase(userRepo)
 
-	return server
+	BuildTaskRoute(server.Group("/tasks"), taskUsecase)
+	BuildTagRoute(server.Group("/tags"), tagUsecase)
+	BuildUserRoute(server.Group("/users"), userUsecase)
+
 }
