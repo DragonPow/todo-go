@@ -61,14 +61,40 @@ func (u *userUsecase) Create(ctx context.Context, args ...interface{}) (domain.U
 	}
 }
 
-func (u *userUsecase) ChangePassword(ctx context.Context, new_password string) error {
+func (u *userUsecase) ChangePassword(ctx context.Context, id int32, new_password string) error {
 	return fmt.Errorf("Implement needed")
 }
 
-func (u *userUsecase) UpdateName(ctx context.Context, new_name string) error {
-	return fmt.Errorf("Implement needed")
+func (u *userUsecase) Update(ctx context.Context, id int32, args ...interface{}) error {
+	if len(args) != 1 {
+		return fmt.Errorf("Args is needed")
+	}
+
+	value := args[0].(map[string]interface{})
+	isSuccess := false
+	tx := u.db.Db.Begin()
+
+	defer func() {
+		if isSuccess {
+			tx.Commit()
+		} else {
+			tx.Rollback()
+		}
+	}()
+
+	// Check user is exists
+	if _, err := u.userRepo.GetByID(ctx, id, tx); err != nil {
+		return err
+	}
+
+	isSuccess = true
+	return u.userRepo.Update(ctx, id, []interface{}{tx, value}...)
 }
 
 func (u *userUsecase) Delete(ctx context.Context, id int32) error {
-	return nil
+	if err := u.userRepo.Delete(ctx, id); err != nil {
+		return err
+	} else {
+		return nil
+	}
 }

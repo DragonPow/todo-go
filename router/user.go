@@ -3,6 +3,7 @@ package router
 import (
 	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 
@@ -13,6 +14,10 @@ import (
 type loginJson struct {
 	Username string `form:"username"`
 	Password string `form:"password"`
+}
+
+type IdUri struct {
+	ID int32 `uri:"id"`
 }
 
 type userRoute struct {
@@ -62,6 +67,7 @@ func (route *userRoute) Create(c *gin.Context) {
 		}
 	}()
 
+	// Bind data
 	var user_info domain.User
 	if err := c.ShouldBind(&user_info); err != nil {
 		fmt.Println(err)
@@ -69,6 +75,7 @@ func (route *userRoute) Create(c *gin.Context) {
 		return
 	}
 
+	// Create new user
 	new_user, err := route.u.Create(c.Request.Context(), user_info)
 	if err != nil {
 		fmt.Println(err)
@@ -84,7 +91,41 @@ func (route *userRoute) Create(c *gin.Context) {
 }
 
 func (route *userRoute) Update(c *gin.Context) {
+	defer func() {
+		if r := recover(); r != nil {
+			fmt.Printf("Panic in Update User\n", r)
+			api_handle.ServerErrorResponse(c)
+		}
+	}()
 
+	var id IdUri
+	if err := c.ShouldBindUri(&id); err != nil {
+		fmt.Println(err)
+		api_handle.BadRequesResponse(c, "ID uri must be integer")
+		return
+	}
+
+	new_user_info := make(map[string]interface{})
+
+	if _, err := c.MultipartForm(); err != nil {
+		api_handle.BadRequesResponse(c, "Some information is wrong")
+		return
+	}
+
+	for key, value := range c.Request.Form {
+		new_user_info[key] = value[0]
+	}
+
+	if err := route.u.Update(c.Request.Context(), id.ID, new_user_info); err != nil {
+		if errors.Is(err, domain.ErrUserNotExists) {
+			api_handle.NotFoundResponse(c, "Not found user with id "+strconv.Itoa(int(id.ID)))
+		} else {
+			api_handle.ServerErrorResponse(c)
+		}
+		return
+	}
+
+	api_handle.SuccessResponse(c, "Update user success, id "+strconv.Itoa(int(id.ID)))
 }
 
 func (route *userRoute) Delete(c *gin.Context) {
