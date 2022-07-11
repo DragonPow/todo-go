@@ -19,8 +19,8 @@ type UserRepository interface {
 	GetByID(ctx context.Context, id int32) (User, error)
 	Create(ctx context.Context, args ...interface{}) (User, error)
 	Update(ctx context.Context, id int32, args ...interface{}) error
-	Delete(ctx context.Context, ids []int32) error
-	CheckExists(ctx context.Context, username string, args ...interface{}) (bool, error)
+	Delete(ctx context.Context, ids int32) error
+	GetByUsername(ctx context.Context, username string, args ...interface{}) (User, error)
 }
 
 type UserUsecase interface {
@@ -28,4 +28,5 @@ type UserUsecase interface {
 	ChangePassword(ctx context.Context, new_password string) error
 	Create(ctx context.Context, args ...interface{}) (User, error)
 	UpdateName(ctx context.Context, new_name string) error
+	Delete(ctx context.Context, id int32) error
 }

@@ -1,34 +1,20 @@
 package domain
 
-import "strconv"
-
-type DomainError struct {
-	Code domainErrorCode
-}
-
-type domainErrorCode int
-
-const (
-	UnExpectedError domainErrorCode = iota
-
-	// UserError
-	UserNotExists
-	UsernameIsExists
-	UsernameOrPasswordWrong
-
-	// TaskError
-	TaskNotExists
-
-	// TaskError
-	TagNotExists
+import (
+	"errors"
 )
 
-func NewDomainError(err domainErrorCode) error {
-	return &DomainError{
-		Code: err,
-	}
-}
+var (
+	ErrUnexpected = errors.New("ErrUnexpected")
 
-func (e *DomainError) Error() string {
-	return "The domain error code: " + strconv.Itoa(int(e.Code))
-}
+	// UserError
+	ErrUserNotExists           = errors.New("ErrUserNotExists")
+	ErrUserIsExists            = errors.New("ErrUserIsExists")
+	ErrUsernameOrPasswordWrong = errors.New("ErrUsernameOrPasswordWrong")
+
+	// TaskError
+	ErrTaskNotExists = errors.New("ErrTaskNotExists")
+
+	// TaskError
+	ErrTagNotExists = errors.New("ErrTagNotExists")
+)

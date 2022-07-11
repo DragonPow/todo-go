@@ -26,9 +26,9 @@ func (u *userRepository) GetByID(ctx context.Context, id int32) (domain.User, er
 	return domain.User{}, fmt.Errorf("Implemeent needed")
 }
 
-func (u *userRepository) CheckExists(ctx context.Context, username string, args ...interface{}) (bool, error) {
+func (u *userRepository) GetByUsername(ctx context.Context, username string, args ...interface{}) (domain.User, error) {
 	if len(args) != 1 {
-		return false, fmt.Errorf("Args is required")
+		return domain.User{}, fmt.Errorf("Args is required")
 	}
 
 	tx := args[0].(*gorm.DB)
@@ -36,12 +36,12 @@ func (u *userRepository) CheckExists(ctx context.Context, username string, args 
 
 	if err := tx.Where("username = ?", username).First(&user).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return false, nil
+			return domain.User{}, domain.ErrUserNotExists
 		} else {
-			return false, err
+			return domain.User{}, err
 		}
 	}
-	return true, nil
+	return user, nil
 }
 
 func (u *userRepository) Create(ctx context.Context, args ...interface{}) (domain.User, error) {
@@ -63,6 +63,6 @@ func (u *userRepository) Update(ctx context.Context, id int32, args ...interface
 	return fmt.Errorf("Implemeent needed")
 }
 
-func (u *userRepository) Delete(ctx context.Context, ids []int32) error {
+func (u *userRepository) Delete(ctx context.Context, id int32) error {
 	return fmt.Errorf("Implemeent needed")
 }

@@ -2,6 +2,7 @@ package usecase
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"project1/domain"
@@ -41,19 +42,23 @@ func (u *userUsecase) Create(ctx context.Context, args ...interface{}) (domain.U
 	}()
 
 	user_info := args[0].(domain.User)
-	if isExists, err := u.userRepo.CheckExists(ctx, user_info.Username, tx); err != nil {
-		return domain.User{}, err
-	} else if isExists {
-		return domain.User{}, domain.NewDomainError(domain.UsernameIsExists)
-	}
+	if _, err := u.userRepo.GetByUsername(ctx, user_info.Username, tx); err != nil {
+		// If username not found, add it
+		if errors.Is(err, domain.ErrUserNotExists) {
+			new_user, new_user_err := u.userRepo.Create(ctx, append([]interface{}{tx}, args...)...)
+			if new_user_err != nil {
+				return domain.User{}, new_user_err
+			}
 
-	new_user, new_user_err := u.userRepo.Create(ctx, append([]interface{}{tx}, args...)...)
-	if new_user_err != nil {
-		return domain.User{}, new_user_err
+			isSuccess = true
+			return new_user, new_user_err
+		} else {
+			// If another error is occured, return error
+			return domain.User{}, err
+		}
+	} else {
+		return domain.User{}, domain.ErrUserIsExists
 	}
-
-	isSuccess = true
-	return new_user, new_user_err
 }
 
 func (u *userUsecase) ChangePassword(ctx context.Context, new_password string) error {
@@ -62,4 +67,8 @@ func (u *userUsecase) ChangePassword(ctx context.Context, new_password string) e
 
 func (u *userUsecase) UpdateName(ctx context.Context, new_name string) error {
 	return fmt.Errorf("Implement needed")
+}
+
+func (u *userUsecase) Delete(ctx context.Context, id int32) error {
+	return nil
 }

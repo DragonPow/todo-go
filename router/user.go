@@ -1,6 +1,7 @@
 package router
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/gin-gonic/gin"
@@ -69,19 +70,13 @@ func (route *userRoute) Create(c *gin.Context) {
 	}
 
 	new_user, err := route.u.Create(c.Request.Context(), user_info)
-
 	if err != nil {
 		fmt.Println(err)
-		domainError, ok := err.(*domain.DomainError)
-
-		if ok {
-			if domainError.Code == domain.UsernameIsExists {
-				api_handle.BadRequesResponse(c, "Username already exists")
-				return
-			}
+		if errors.Is(err, domain.ErrUserIsExists) {
+			api_handle.BadRequesResponse(c, "Username already exists")
+		} else {
+			api_handle.ServerErrorResponse(c)
 		}
-
-		api_handle.ServerErrorResponse(c)
 		return
 	}
 
