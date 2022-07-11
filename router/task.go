@@ -16,8 +16,8 @@ func BuildTaskRoute(router *gin.RouterGroup, t domain.TaskUsecase) {
 	router.GET("/", task.Fetch)
 	router.GET("/:id", task.GetByID)
 	router.POST("/", task.Create)
-	router.DELETE("/:id", task.Delete)
 	router.PUT("/:id", task.Update)
+	router.DELETE("/:id", task.Delete)
 }
 
 func (t *taskRoute) Fetch(c *gin.Context) {

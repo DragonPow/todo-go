@@ -4,14 +4,17 @@ import (
 	"context"
 	"fmt"
 	"project1/domain"
+	"project1/util/db"
 )
 
 type tagUsecase struct {
+	db      db.Database
 	tagRepo domain.TagRepository
 }
 
-func NewTagUsecase(t domain.TagRepository) domain.TagRepository {
+func NewTagUsecase(db db.Database, t domain.TagRepository) domain.TagRepository {
 	return &tagUsecase{
+		db:      db,
 		tagRepo: t,
 	}
 }

@@ -9,7 +9,7 @@ import (
 )
 
 type Database struct {
-	db *gorm.DB
+	Db *gorm.DB
 }
 
 func Init() *Database {
@@ -23,5 +23,10 @@ func Init() *Database {
 
 	db.AutoMigrate(&domain.Task{}, &domain.Tag{}, &domain.User{})
 
-	return &Database{db: db}
+	return &Database{Db: db}
 }
+
+// func (db *Database) Transaction(fc func(params *Database) error, opts ...*sql.TxOptions) (err error) {
+
+// 	return db.Db.Transaction(func(tx *gorm.DB) error { return fc(db) }, opts...)
+// }

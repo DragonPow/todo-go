@@ -14,16 +14,11 @@ func BuildTagRoute(router *gin.RouterGroup, t domain.TagUsecase) {
 	tag := tagRoute{tagUsecase: t}
 
 	router.GET("/", tag.Fetch)
-	router.GET("/:id", tag.GetByID)
 	router.POST("/", tag.Create)
 	router.DELETE("/:id", tag.Delete)
 }
 
 func (t *tagRoute) Fetch(c *gin.Context) {
-
-}
-
-func (t *tagRoute) GetByID(c *gin.Context) {
 
 }
 

@@ -4,15 +4,18 @@ import (
 	"context"
 	"fmt"
 	"project1/domain"
+	"project1/util/db"
 )
 
 type taskUsecase struct {
+	db       db.Database
 	taskRepo domain.TaskRepository
 	userRepo domain.UserRepository
 }
 
-func NewTaskUsecase(t domain.TaskRepository, u domain.UserRepository) domain.TaskUsecase {
+func NewTaskUsecase(db db.Database, t domain.TaskRepository, u domain.UserRepository) domain.TaskUsecase {
 	return &taskUsecase{
+		db:       db,
 		taskRepo: t,
 		userRepo: u,
 	}
