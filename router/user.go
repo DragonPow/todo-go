@@ -55,14 +55,7 @@ func (route *userRoute) Login(c *gin.Context) {
 	// token := make(map[string]interface{})
 	// token["token"] = "123"
 
-	api_handle.SuccessResponse(c,
-		map[string]interface{}{
-			"id":       account.ID,
-			"username": account.Username,
-			"name":     account.Name,
-		},
-		// token,
-	)
+	api_handle.SuccessResponse(c, getUserJsonResponse(account))
 }
 
 func (route *userRoute) GetByID(c *gin.Context) {
@@ -86,7 +79,7 @@ func (route *userRoute) GetByID(c *gin.Context) {
 		return
 	}
 
-	api_handle.SuccessResponse(c, user_info)
+	api_handle.SuccessResponse(c, getUserJsonResponse(user_info))
 }
 
 func (route *userRoute) Create(c *gin.Context) {
@@ -112,7 +105,7 @@ func (route *userRoute) Create(c *gin.Context) {
 		return
 	}
 
-	api_handle.SuccessResponse(c, new_user)
+	api_handle.SuccessResponse(c, getUserJsonResponse(new_user))
 }
 
 func (route *userRoute) Update(c *gin.Context) {
