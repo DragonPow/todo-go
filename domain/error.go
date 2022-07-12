@@ -16,5 +16,6 @@ var (
 	ErrTaskNotExists = errors.New("ErrTaskNotExists")
 
 	// TaskError
-	ErrTagNotExists = errors.New("ErrTagNotExists")
+	ErrTagNotExists       = errors.New("ErrTagNotExists")
+	ErrTagValueDuplicated = errors.New("ErrTagValueDuplicated")
 )

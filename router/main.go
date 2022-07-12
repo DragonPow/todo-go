@@ -11,6 +11,10 @@ import (
 	db "project1/util/db"
 )
 
+type IdUri struct {
+	ID int32 `uri:"id"`
+}
+
 func Init(server *gin.Engine, DB db.Database) {
 	taskRepo := repository.NewTaskRepository(DB)
 	tagRepo := repository.NewTagRepository(DB)

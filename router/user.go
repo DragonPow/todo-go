@@ -16,10 +16,6 @@ type loginJson struct {
 	Password string `form:"password"`
 }
 
-type IdUri struct {
-	ID int32 `uri:"id"`
-}
-
 type userRoute struct {
 	u domain.UserUsecase
 }
@@ -34,12 +30,16 @@ func BuildUserRoute(router *gin.RouterGroup, userUsecase domain.UserUsecase) {
 }
 
 func (route *userRoute) Login(c *gin.Context) {
+	defer handlePanic(c, "Login")
+
+	// Get username and password from query
 	var loginInfo loginJson
 	if err := c.ShouldBindQuery(&loginInfo); err != nil {
 		api_handle.BadRequesResponse(c, "Username or password is needed")
 		return
 	}
 
+	// Login
 	account, err := route.u.Login(c.Request.Context(), loginInfo.Username, loginInfo.Password)
 	if err != nil {
 		if errors.Is(err, domain.ErrUserNotExists) {
@@ -118,16 +118,16 @@ func (route *userRoute) Create(c *gin.Context) {
 func (route *userRoute) Update(c *gin.Context) {
 	defer handlePanic(c, "Update user")
 
-	var id IdUri
 	// Get Id from uri
+	var id IdUri
 	if err := c.ShouldBindUri(&id); err != nil {
 		fmt.Println(err)
 		api_handle.BadRequesResponse(c, "ID uri must be integer")
 		return
 	}
 
-	new_user_info := make(map[string]interface{})
 	// Get user information from multipart form
+	new_user_info := make(map[string]interface{})
 	if _, err := c.MultipartForm(); err != nil {
 		api_handle.BadRequesResponse(c, "Some information is wrong")
 		return
