@@ -44,7 +44,24 @@ func (t *taskRepository) GetByID(ctx context.Context, id int32, args ...interfac
 }
 
 func (t *taskRepository) GetByUserId(ctx context.Context, creator_id int32, args ...interface{}) ([]int32, error) {
-	return nil, fmt.Errorf("Implement needed")
+	tx, err := t.GetTransaction(args, 0)
+	if err != nil {
+		return nil, err
+	}
+
+	// Get all task by user id
+	var tasks []domain.Task
+	if err := tx.Where("cretor_id IN ?", creator_id).Find(&tasks).Error; err != nil {
+		return nil, err
+	}
+
+	// Map to task model to int
+	tasks_ids := []int32{}
+	for _, tasks := range tasks {
+		tasks_ids = append(tasks_ids, tasks.ID)
+	}
+
+	return tasks_ids, nil
 }
 
 func (t *taskRepository) Create(ctx context.Context, creator_id int32, args ...interface{}) (domain.Task, error) {

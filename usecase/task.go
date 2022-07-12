@@ -104,5 +104,27 @@ func (t *taskUsecase) Delete(ctx context.Context, ids []int32) error {
 }
 
 func (t *taskUsecase) DeleteAll(ctx context.Context, creator_id int32) error {
-	return fmt.Errorf("Implemeent needed")
+	isSuccess := false
+	tx := t.db.Db.Begin()
+
+	defer func() {
+		if isSuccess {
+			tx.Commit()
+		}
+		tx.Rollback()
+	}()
+
+	// Find id of user
+	tasks_id, err := t.taskRepo.GetByUserId(ctx, creator_id, tx)
+	if err != nil {
+		return err
+	}
+
+	// Delete
+	if err := t.taskRepo.Delete(ctx, tasks_id, tx); err != nil {
+		return err
+	}
+
+	isSuccess = true
+	return nil
 }
