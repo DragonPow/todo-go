@@ -78,8 +78,29 @@ func (t *taskUsecase) Update(ctx context.Context, id int32, args ...interface{})
 	return fmt.Errorf("Implemeent needed")
 }
 
-func (t *taskUsecase) Delete(ctx context.Context, ids int32) error {
-	return fmt.Errorf("Implemeent needed")
+func (t *taskUsecase) Delete(ctx context.Context, ids []int32) error {
+	isSuccess := false
+	tx := t.db.Db.Begin()
+
+	defer func() {
+		if isSuccess {
+			tx.Commit()
+		}
+		tx.Rollback()
+	}()
+
+	// Check task exists
+	if err := t.taskRepo.CheckExists(ctx, ids, tx); err != nil {
+		return err
+	}
+
+	// Delete
+	if err := t.taskRepo.Delete(ctx, ids, tx); err != nil {
+		return err
+	}
+
+	isSuccess = true
+	return nil
 }
 
 func (t *taskUsecase) DeleteAll(ctx context.Context, creator_id int32) error {

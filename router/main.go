@@ -16,6 +16,10 @@ type IdUri struct {
 	ID int32 `uri:"id"`
 }
 
+type IdsUri struct {
+	IDs []int32 `form:"ids"`
+}
+
 type jsonResponse map[string]interface{}
 
 func Init(server *gin.Engine, DB db.Database) {

@@ -12,12 +12,12 @@ import (
 )
 
 type taskRepository struct {
-	Conn db.Database
+	postgre_repository
 }
 
 func NewTaskRepository(conn db.Database) domain.TaskRepository {
 	return &taskRepository{
-		Conn: conn,
+		postgre_repository: *newRepository(conn),
 	}
 }
 
@@ -69,25 +69,37 @@ func (t *taskRepository) Create(ctx context.Context, creator_id int32, args ...i
 	return new_task, nil
 }
 
-func (t *taskRepository) GetTransaction(args []interface{}, minNumberLen int) (*gorm.DB, error) {
-	var tx *gorm.DB
-	if len(args) <= minNumberLen {
-		tx = t.Conn.Db
-	} else {
-		arg0, ok := args[0].(*gorm.DB)
-		if ok {
-			tx = arg0
-		} else {
-			return nil, fmt.Errorf("Args tx is needed")
-		}
-	}
-	return tx, nil
-}
-
 func (t *taskRepository) Update(ctx context.Context, id int32, args ...interface{}) error {
 	return fmt.Errorf("Implement needed")
 }
 
-func (t *taskRepository) Delete(ctx context.Context, ids int32, args ...interface{}) error {
-	return fmt.Errorf("Implement needed")
+func (t *taskRepository) Delete(ctx context.Context, ids []int32, args ...interface{}) error {
+	tx, err := t.GetTransaction(args, 0)
+	if err != nil {
+		return err
+	}
+
+	if err := tx.Delete(&domain.Task{}, ids).Error; err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (t *taskRepository) CheckExists(ctx context.Context, ids []int32, args ...interface{}) error {
+	tx, err := t.GetTransaction(args, 0)
+	if err != nil {
+		return err
+	}
+
+	var tasks []domain.Task
+	if err := tx.Where("Id IN ?", ids).Find(&tasks).Error; err != nil {
+		return err
+	}
+
+	if len(tasks) != len(ids) {
+		return domain.ErrTagNotExists
+	}
+
+	return nil
 }

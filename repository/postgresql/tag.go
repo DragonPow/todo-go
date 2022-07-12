@@ -12,23 +12,19 @@ import (
 )
 
 type tagRepository struct {
-	Conn db.Database
+	postgre_repository
 }
 
 func NewTagRepository(conn db.Database) domain.TagRepository {
-	return &tagRepository{Conn: conn}
+	return &tagRepository{
+		postgre_repository: *newRepository(conn),
+	}
 }
 
 func (t *tagRepository) FetchAll(ctx context.Context, args ...interface{}) ([]domain.Tag, error) {
-	var tx *gorm.DB
-	if len(args) == 0 {
-		tx = t.Conn.Db
-	} else {
-		if arg0, ok := args[0].(*gorm.DB); ok {
-			tx = arg0
-		} else {
-			return nil, errors.New("Args tx is needed")
-		}
+	tx, err := t.GetTransaction(args, 0)
+	if err != nil {
+		return nil, err
 	}
 
 	var tags []domain.Tag
@@ -40,15 +36,9 @@ func (t *tagRepository) FetchAll(ctx context.Context, args ...interface{}) ([]do
 }
 
 func (t *tagRepository) GetByID(ctx context.Context, id int32, args ...interface{}) (domain.Tag, error) {
-	var tx *gorm.DB
-	if len(args) == 0 {
-		tx = t.Conn.Db
-	} else {
-		if arg0, ok := args[0].(*gorm.DB); ok {
-			tx = arg0
-		} else {
-			return domain.Tag{}, errors.New("Args tx is needed")
-		}
+	tx, err := t.GetTransaction(args, 0)
+	if err != nil {
+		return domain.Tag{}, err
 	}
 
 	var tag domain.Tag
@@ -63,15 +53,9 @@ func (t *tagRepository) GetByID(ctx context.Context, id int32, args ...interface
 }
 
 func (t *tagRepository) Create(ctx context.Context, args ...interface{}) (domain.Tag, error) {
-	var tx *gorm.DB
-	if len(args) < 2 {
-		tx = t.Conn.Db
-	} else {
-		if arg0, ok := args[0].(*gorm.DB); ok {
-			tx = arg0
-		} else {
-			return domain.Tag{}, errors.New("Args tx is needed")
-		}
+	tx, err := t.GetTransaction(args, 1)
+	if err != nil {
+		return domain.Tag{}, err
 	}
 
 	new_tag := args[len(args)-1].(domain.Tag)
@@ -91,15 +75,9 @@ func (t *tagRepository) Create(ctx context.Context, args ...interface{}) (domain
 }
 
 func (t *tagRepository) Update(ctx context.Context, args ...interface{}) (domain.Tag, error) {
-	var tx *gorm.DB
-	if len(args) < 2 {
-		tx = t.Conn.Db
-	} else {
-		if arg0, ok := args[0].(*gorm.DB); ok {
-			tx = arg0
-		} else {
-			return domain.Tag{}, errors.New("Args tx is needed")
-		}
+	tx, err := t.GetTransaction(args, 1)
+	if err != nil {
+		return domain.Tag{}, err
 	}
 
 	new_tag_info := args[len(args)-1].(map[string]interface{})
@@ -114,15 +92,9 @@ func (t *tagRepository) Update(ctx context.Context, args ...interface{}) (domain
 }
 
 func (t *tagRepository) Delete(ctx context.Context, id int32, args ...interface{}) error {
-	var tx *gorm.DB
-	if len(args) == 0 {
-		tx = t.Conn.Db
-	} else {
-		if arg0, ok := args[0].(*gorm.DB); ok {
-			tx = arg0
-		} else {
-			return errors.New("Args tx is needed")
-		}
+	tx, err := t.GetTransaction(args, 0)
+	if err != nil {
+		return err
 	}
 
 	tag := domain.Tag{ID: id}

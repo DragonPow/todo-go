@@ -23,10 +23,11 @@ type Task struct {
 type TaskRepository interface {
 	Fetch(ctx context.Context, user_id int32, start_index int32, number int32, args ...interface{}) ([]Task, error)
 	GetByID(ctx context.Context, id int32, args ...interface{}) (Task, error)
+	CheckExists(ctx context.Context, ids []int32, args ...interface{}) error
 	GetByUserId(ctx context.Context, creator_id int32, args ...interface{}) ([]int32, error)
 	Create(ctx context.Context, creator_id int32, args ...interface{}) (Task, error)
 	Update(ctx context.Context, id int32, args ...interface{}) error
-	Delete(ctx context.Context, id int32, args ...interface{}) error
+	Delete(ctx context.Context, ids []int32, args ...interface{}) error
 }
 
 type TaskUsecase interface {
@@ -34,6 +35,6 @@ type TaskUsecase interface {
 	GetByID(ctx context.Context, id int32) (Task, error)
 	Create(ctx context.Context, creator_id int32, args ...interface{}) (Task, error)
 	Update(ctx context.Context, id int32, args ...interface{}) error
-	Delete(ctx context.Context, ids int32) error
+	Delete(ctx context.Context, ids []int32) error
 	DeleteAll(ctx context.Context, creator_id int32) error
 }
