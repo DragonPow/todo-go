@@ -42,32 +42,57 @@ func (route *userRoute) Login(c *gin.Context) {
 
 	account, err := route.u.Login(c.Request.Context(), loginInfo.Username, loginInfo.Password)
 	if err != nil {
-		message := fmt.Sprintf("User with username = %s and password = %s is wrong", loginInfo.Username, loginInfo.Password)
-		api_handle.NotFoundResponse(c, message)
+		if errors.Is(err, domain.ErrUserNotExists) {
+			message := fmt.Sprintf("Username or password is wrong")
+			api_handle.NotFoundResponse(c, message)
+		} else {
+			api_handle.ServerErrorResponse(c)
+		}
 		return
 	}
+
+	// Build token
+	// token := make(map[string]interface{})
+	// token["token"] = "123"
 
 	api_handle.SuccessResponse(c,
 		map[string]interface{}{
 			"id":       account.ID,
 			"username": account.Username,
 			"name":     account.Name,
-		})
+		},
+		// token,
+	)
 }
 
 func (route *userRoute) GetByID(c *gin.Context) {
+	defer handlePanic(c, "Get user by ID")
 
+	var id IdUri
+	// Get Id from uri
+	if err := c.ShouldBindUri(&id); err != nil {
+		api_handle.BadRequesResponse(c, "Id must be integer")
+		return
+	}
+
+	// Get
+	user_info, err := route.u.GetByID(c.Request.Context(), id.ID)
+	if err != nil {
+		if errors.Is(err, domain.ErrUserNotExists) {
+			api_handle.NotFoundResponse(c, "User with ID "+strconv.Itoa(int(id.ID))+" does not exist")
+		} else {
+			api_handle.ServerErrorResponse(c)
+		}
+		return
+	}
+
+	api_handle.SuccessResponse(c, user_info)
 }
 
 func (route *userRoute) Create(c *gin.Context) {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Printf("Panic in Create User\n", r)
-			api_handle.ServerErrorResponse(c)
-		}
-	}()
+	defer handlePanic(c, "Create user")
 
-	// Bind data
+	// Get user information from body
 	var user_info domain.User
 	if err := c.ShouldBind(&user_info); err != nil {
 		fmt.Println(err)
@@ -91,14 +116,10 @@ func (route *userRoute) Create(c *gin.Context) {
 }
 
 func (route *userRoute) Update(c *gin.Context) {
-	defer func() {
-		if r := recover(); r != nil {
-			fmt.Printf("Panic in Update User\n", r)
-			api_handle.ServerErrorResponse(c)
-		}
-	}()
+	defer handlePanic(c, "Update user")
 
 	var id IdUri
+	// Get Id from uri
 	if err := c.ShouldBindUri(&id); err != nil {
 		fmt.Println(err)
 		api_handle.BadRequesResponse(c, "ID uri must be integer")
@@ -106,16 +127,16 @@ func (route *userRoute) Update(c *gin.Context) {
 	}
 
 	new_user_info := make(map[string]interface{})
-
+	// Get user information from multipart form
 	if _, err := c.MultipartForm(); err != nil {
 		api_handle.BadRequesResponse(c, "Some information is wrong")
 		return
 	}
-
 	for key, value := range c.Request.Form {
 		new_user_info[key] = value[0]
 	}
 
+	// Update
 	if err := route.u.Update(c.Request.Context(), id.ID, new_user_info); err != nil {
 		if errors.Is(err, domain.ErrUserNotExists) {
 			api_handle.NotFoundResponse(c, "Not found user with id "+strconv.Itoa(int(id.ID)))
@@ -129,5 +150,24 @@ func (route *userRoute) Update(c *gin.Context) {
 }
 
 func (route *userRoute) Delete(c *gin.Context) {
+	defer handlePanic(c, "Delete user")
 
+	var id IdUri
+	// Get Id from uri
+	if err := c.ShouldBindUri(&id); err != nil {
+		api_handle.BadRequesResponse(c, "ID uri must be integer")
+		return
+	}
+
+	// Delete
+	if err := route.u.Delete(c.Request.Context(), id.ID); err != nil {
+		if errors.Is(err, domain.ErrUserNotExists) {
+			api_handle.NotFoundResponse(c, "User with id "+strconv.Itoa(int(id.ID))+" not exists")
+		} else {
+			api_handle.ServerErrorResponse(c)
+		}
+		return
+	}
+
+	api_handle.SuccessResponse(c, "Delete id "+strconv.Itoa(int(id.ID))+" success")
 }

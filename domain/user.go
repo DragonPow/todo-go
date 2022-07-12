@@ -15,11 +15,11 @@ type User struct {
 }
 
 type UserRepository interface {
-	GetByUsernameAndPassword(ctx context.Context, username string, password string) (User, error)
+	GetByUsernameAndPassword(ctx context.Context, username string, password string, args ...interface{}) (User, error)
 	GetByID(ctx context.Context, id int32, args ...interface{}) (User, error)
 	Create(ctx context.Context, args ...interface{}) (User, error)
 	Update(ctx context.Context, id int32, args ...interface{}) error
-	Delete(ctx context.Context, id int32) error
+	Delete(ctx context.Context, id int32, args ...interface{}) error
 	GetByUsername(ctx context.Context, username string, args ...interface{}) (User, error)
 }
 
@@ -28,4 +28,5 @@ type UserUsecase interface {
 	Create(ctx context.Context, args ...interface{}) (User, error)
 	Update(ctx context.Context, id int32, args ...interface{}) error
 	Delete(ctx context.Context, id int32) error
+	GetByID(ctx context.Context, id int32) (User, error)
 }

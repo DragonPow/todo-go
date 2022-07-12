@@ -18,8 +18,28 @@ func NewUserRepository(conn db.Database) domain.UserRepository {
 	return &userRepository{Conn: conn}
 }
 
-func (u *userRepository) GetByUsernameAndPassword(ctx context.Context, username string, password string) (domain.User, error) {
-	return domain.User{}, fmt.Errorf("Implemeent needed")
+func (u *userRepository) GetByUsernameAndPassword(ctx context.Context, username string, password string, args ...interface{}) (domain.User, error) {
+	var tx *gorm.DB
+	if len(args) == 0 {
+		tx = u.Conn.Db
+	} else {
+		if arg0, ok := args[0].(*gorm.DB); !ok {
+			return domain.User{}, errors.New("Args tx is needed")
+		} else {
+			tx = arg0
+		}
+	}
+
+	var user domain.User
+	if err := tx.Where("username=? AND password=?", username, password).First(&user).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return domain.User{}, domain.ErrUserNotExists
+		} else {
+			return domain.User{}, err
+		}
+	}
+
+	return user, nil
 }
 
 func (u *userRepository) GetByID(ctx context.Context, id int32, args ...interface{}) (domain.User, error) {
@@ -94,9 +114,21 @@ func (u *userRepository) Update(ctx context.Context, id int32, args ...interface
 	return nil
 }
 
-func (u *userRepository) Delete(ctx context.Context, id int32) error {
-	if err := u.Conn.Db.Delete(&domain.User{}, id).Error; err != nil {
+func (u *userRepository) Delete(ctx context.Context, id int32, args ...interface{}) error {
+	var tx *gorm.DB
+	if len(args) == 0 {
+		tx = u.Conn.Db
+	} else {
+		if arg0, ok := args[0].(*gorm.DB); !ok {
+			return errors.New("Args tx is needed")
+		} else {
+			tx = arg0
+		}
+	}
+
+	if err := tx.Delete(&domain.User{}, id).Error; err != nil {
 		return err
 	}
+
 	return nil
 }

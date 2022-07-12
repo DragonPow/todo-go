@@ -1,10 +1,13 @@
 package router
 
 import (
+	"fmt"
+
 	"github.com/gin-gonic/gin"
 
 	repository "project1/repository/postgresql"
 	usecase "project1/usecase"
+	"project1/util/api_handle"
 	db "project1/util/db"
 )
 
@@ -21,4 +24,12 @@ func Init(server *gin.Engine, DB db.Database) {
 	BuildTagRoute(server.Group("/tags"), tagUsecase)
 	BuildUserRoute(server.Group("/users"), userUsecase)
 
+}
+
+func handlePanic(c *gin.Context, routeName string) {
+	if r := recover(); r != nil {
+		fmt.Printf("Panic in route: %s\n", routeName)
+		fmt.Println(r)
+		api_handle.ServerErrorResponse(c)
+	}
 }

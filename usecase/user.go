@@ -22,7 +22,11 @@ func NewUserUsecase(db db.Database, u domain.UserRepository) domain.UserUsecase 
 }
 
 func (u *userUsecase) Login(ctx context.Context, username string, password string) (domain.User, error) {
-	return domain.User{}, fmt.Errorf("Implement needed")
+	user, err := u.userRepo.GetByUsernameAndPassword(ctx, username, password)
+	if err != nil {
+		return domain.User{}, err
+	}
+	return user, nil
 }
 
 func (u *userUsecase) Create(ctx context.Context, args ...interface{}) (domain.User, error) {
@@ -92,9 +96,33 @@ func (u *userUsecase) Update(ctx context.Context, id int32, args ...interface{})
 }
 
 func (u *userUsecase) Delete(ctx context.Context, id int32) error {
-	if err := u.userRepo.Delete(ctx, id); err != nil {
+	isSuccess := false
+	tx := u.db.Db.Begin()
+
+	defer func() {
+		if isSuccess {
+			tx.Commit()
+		} else {
+			tx.Rollback()
+		}
+	}()
+
+	if _, err := u.userRepo.GetByID(ctx, id, tx); err != nil {
+		return err
+	}
+
+	if err := u.userRepo.Delete(ctx, id, tx); err != nil {
 		return err
 	} else {
 		return nil
 	}
+}
+
+func (u *userUsecase) GetByID(ctx context.Context, id int32) (domain.User, error) {
+	user, err := u.userRepo.GetByID(ctx, id)
+	if err != nil {
+		return domain.User{}, err
+	}
+
+	return user, nil
 }
