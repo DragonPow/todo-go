@@ -24,9 +24,9 @@ type fetchReqStruct struct {
 }
 
 type TaskUpdateReqStruct struct {
-	Name        string  `form:"name"`
-	Description string  `form:"description"`
-	IsDone      bool    `form:"is_done:`
+	Name        *string `form:"name"`
+	Description *string `form:"description"`
+	IsDone      *bool   `form:"is_done:`
 	TagsAdd     []int32 `form:"tags_add"`
 	TagsDelete  []int32 `form:"tags_delete"`
 }
@@ -224,10 +224,25 @@ func (route *taskRoute) Update(c *gin.Context) {
 	}
 
 	// Tranfer
-	var new_task_info map[string]interface{}
+	new_task_info := map[string]interface{}{}
 	var new_tags_add []int32
 	var new_tags_remove []int32
-	// TODO: Implement code here
+
+	if taskReq.Name != nil {
+		new_task_info["name"] = *taskReq.Name
+	}
+	if taskReq.Description != nil {
+		new_task_info["description"] = *taskReq.Description
+	}
+	if taskReq.IsDone != nil {
+		new_task_info["is_done"] = *taskReq.IsDone
+	}
+	if taskReq.TagsAdd != nil && len(taskReq.TagsAdd) > 0 {
+		new_tags_add = taskReq.TagsAdd
+	}
+	if taskReq.TagsDelete != nil && len(taskReq.TagsDelete) > 0 {
+		new_tags_remove = taskReq.TagsDelete
+	}
 
 	// Update
 	if err := route.taskUsecase.Update(c.Request.Context(), id.ID, new_task_info, new_tags_add, new_tags_remove); err != nil {
@@ -239,5 +254,5 @@ func (route *taskRoute) Update(c *gin.Context) {
 		return
 	}
 
-	api_handle.SuccessResponse(c, nil)
+	api_handle.SuccessResponse(c, "Update task with id "+strconv.Itoa(int(id.ID))+" success")
 }

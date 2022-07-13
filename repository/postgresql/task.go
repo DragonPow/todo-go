@@ -57,7 +57,7 @@ func (t *taskRepository) Fetch(ctx context.Context, user_id int32, start_index i
 		tx = tx.Where(queryString, queryArgs...)
 	}
 
-	if err := tx.Preload("Tags").Limit(int(number)).Offset(int(start_index)).Find(&tasks).Error; err != nil {
+	if err := tx.Preload("UserCreator").Preload("Tags").Limit(int(number)).Offset(int(start_index)).Find(&tasks).Error; err != nil {
 		return nil, err
 	}
 
@@ -161,6 +161,10 @@ func (t *taskRepository) Update(ctx context.Context, id int32, args ...interface
 }
 
 func (t *taskRepository) Delete(ctx context.Context, ids []int32, args ...interface{}) error {
+	if len(ids) == 0 {
+		return nil
+	}
+
 	tx, err := t.GetTransaction(args, 0)
 	if err != nil {
 		return err
