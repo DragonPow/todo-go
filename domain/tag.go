@@ -12,6 +12,13 @@ type Tag struct {
 	CreatedAt   time.Time `form:"-" json:"created_at" gorm:"column:created_at"`
 }
 
+func TranferIdToTag(ids []int32) (tags []Tag) {
+	for _, id := range ids {
+		tags = append(tags, Tag{ID: id})
+	}
+	return tags
+}
+
 type TagRepository interface {
 	FetchAll(ctx context.Context, args ...interface{}) ([]Tag, error)
 	GetByID(ctx context.Context, id int32, args ...interface{}) (Tag, error)

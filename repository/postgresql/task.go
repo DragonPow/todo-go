@@ -3,7 +3,6 @@ package repository
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
@@ -20,6 +19,13 @@ func NewTaskRepository(conn db.Database) domain.TaskRepository {
 	return &taskRepository{
 		postgre_repository: *newRepository(conn),
 	}
+}
+
+func SearchUserByIds(ctx context.Context, ids []int32, db *gorm.DB) (tasks []domain.Task, err error) {
+	if err = db.Where("id IN ?", ids).Find(&tasks).Error; err != nil {
+		return nil, err
+	}
+	return tasks, nil
 }
 
 func (t *taskRepository) Fetch(ctx context.Context, user_id int32, start_index int32, number int32, args ...interface{}) ([]domain.Task, error) {
@@ -129,14 +135,29 @@ func (t *taskRepository) Create(ctx context.Context, creator_id int32, args ...i
 }
 
 func (t *taskRepository) Update(ctx context.Context, id int32, args ...interface{}) error {
-	return fmt.Errorf("Implement needed")
-}
-
-func SearchUserByIds(ctx context.Context, ids []int32, db *gorm.DB) (tasks []domain.Task, err error) {
-	if err = db.Where("id IN ?", ids).Find(&tasks).Error; err != nil {
-		return nil, err
+	tx, err := t.GetTransaction(args, 3)
+	if err != nil {
+		return err
 	}
-	return tasks, nil
+
+	new_task := args[len(args)-3].(map[string]interface{})
+	new_tags_add := args[len(args)-2].([]int32)
+	new_tags_delete := args[len(args)-1].([]int32)
+
+	// Update information
+	if err := tx.Model(&domain.Task{ID: id}).Updates(new_task).Error; err != nil {
+		return err
+	}
+
+	// Update tags
+	if err := tx.Model(&domain.Task{ID: id}).Association("Tags").Append(domain.TranferIdToTag(new_tags_add)); err != nil {
+		return err
+	}
+	if err := tx.Model(&domain.Task{ID: id}).Association("Tags").Delete(domain.TranferIdToTag(new_tags_delete)); err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func (t *taskRepository) Delete(ctx context.Context, ids []int32, args ...interface{}) error {

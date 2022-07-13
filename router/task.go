@@ -23,6 +23,14 @@ type fetchReqStruct struct {
 	Number     int32   `form:"number" json:"number"`
 }
 
+type TaskUpdateReqStruct struct {
+	Name        string  `form:"name"`
+	Description string  `form:"description"`
+	IsDone      bool    `form:"is_done:`
+	TagsAdd     []int32 `form:"tags_add"`
+	TagsDelete  []int32 `form:"tags_delete"`
+}
+
 func BuildTaskRoute(router *gin.RouterGroup, t domain.TaskUsecase) {
 	task := taskRoute{taskUsecase: t}
 
@@ -34,7 +42,7 @@ func BuildTaskRoute(router *gin.RouterGroup, t domain.TaskUsecase) {
 	router.DELETE("/ids", task.Delete)
 }
 
-func (t *taskRoute) Fetch(c *gin.Context) {
+func (route *taskRoute) Fetch(c *gin.Context) {
 	defer handlePanic(c, "Fetch task")
 
 	creator_id, err := authenticateUser(c)
@@ -57,7 +65,7 @@ func (t *taskRoute) Fetch(c *gin.Context) {
 	// 	args["tags"] = reqJson.Tags
 	// }
 
-	tasks, err := t.taskUsecase.Fetch(c.Request.Context(), creator_id, reqJson.StartIndex, reqJson.Number, args)
+	tasks, err := route.taskUsecase.Fetch(c.Request.Context(), creator_id, reqJson.StartIndex, reqJson.Number, args)
 	if err != nil {
 		if errors.Is(err, domain.ErrUserNotExists) {
 			api_handle.BadRequesResponse(c, "User is not exists")
@@ -70,7 +78,7 @@ func (t *taskRoute) Fetch(c *gin.Context) {
 	api_handle.SuccessResponse(c, tasks)
 }
 
-func (t *taskRoute) GetByID(c *gin.Context) {
+func (route *taskRoute) GetByID(c *gin.Context) {
 	defer handlePanic(c, "Get task by ID")
 
 	// Get ID from uri
@@ -81,7 +89,7 @@ func (t *taskRoute) GetByID(c *gin.Context) {
 	}
 
 	// Get
-	task, err := t.taskUsecase.GetByID(c.Request.Context(), id.ID)
+	task, err := route.taskUsecase.GetByID(c.Request.Context(), id.ID)
 	if err != nil {
 		if errors.Is(err, domain.ErrTaskNotExists) {
 			api_handle.NotFoundResponse(c, "The task does not exist, id "+strconv.Itoa(int(id.ID)))
@@ -95,7 +103,7 @@ func (t *taskRoute) GetByID(c *gin.Context) {
 	api_handle.SuccessResponse(c, getTaskJsonResponse(task))
 }
 
-func (t *taskRoute) Create(c *gin.Context) {
+func (route *taskRoute) Create(c *gin.Context) {
 	defer handlePanic(c, "Create task")
 
 	// Parse token to user information
@@ -121,6 +129,7 @@ func (t *taskRoute) Create(c *gin.Context) {
 		list_tag = append(list_tag, domain.Tag{ID: int32(value_int)})
 	}
 
+	// Tranfer to domain
 	new_task := domain.Task{
 		Name:        name,
 		Description: description,
@@ -130,7 +139,7 @@ func (t *taskRoute) Create(c *gin.Context) {
 	}
 
 	// Create
-	new_task, err := t.taskUsecase.Create(c.Request.Context(), creator_id, new_task)
+	new_task, err := route.taskUsecase.Create(c.Request.Context(), creator_id, new_task)
 	if err != nil {
 		if errors.Is(err, domain.ErrUserNotExists) {
 			api_handle.NotFoundResponse(c, "The user does not exist")
@@ -143,7 +152,8 @@ func (t *taskRoute) Create(c *gin.Context) {
 		return
 	}
 
-	new_task, err = t.taskUsecase.GetByID(c.Request.Context(), new_task.ID)
+	// Get
+	new_task, err = route.taskUsecase.GetByID(c.Request.Context(), new_task.ID)
 	if err != nil {
 		if errors.Is(err, domain.ErrTaskNotExists) {
 			api_handle.NotFoundResponse(c, "The task does not exist, id "+strconv.Itoa(int(new_task.ID)))
@@ -157,14 +167,15 @@ func (t *taskRoute) Create(c *gin.Context) {
 	api_handle.SuccessResponse(c, new_task)
 }
 
-func (t *taskRoute) DeleteAll(c *gin.Context) {
+func (route *taskRoute) DeleteAll(c *gin.Context) {
 	// Get creator_id
 	creator_id, err := authenticateUser(c)
 	if err != nil {
 		return
 	}
 
-	if err := t.taskUsecase.DeleteAll(c.Request.Context(), creator_id); err != nil {
+	// Delete
+	if err := route.taskUsecase.DeleteAll(c.Request.Context(), creator_id); err != nil {
 		if errors.Is(err, domain.ErrUserNotExists) {
 			api_handle.BadRequesResponse(c, "User is not exist")
 		} else {
@@ -176,7 +187,7 @@ func (t *taskRoute) DeleteAll(c *gin.Context) {
 	api_handle.SuccessResponse(c, "Delete all task of user "+strconv.Itoa(int(creator_id))+" success")
 }
 
-func (t *taskRoute) Delete(c *gin.Context) {
+func (route *taskRoute) Delete(c *gin.Context) {
 	// Get ID from body
 	var ids IdsUri
 	if err := c.ShouldBind(&ids); err != nil {
@@ -184,7 +195,8 @@ func (t *taskRoute) Delete(c *gin.Context) {
 		return
 	}
 
-	if err := t.taskUsecase.Delete(c.Request.Context(), ids.IDs); err != nil {
+	// Delete
+	if err := route.taskUsecase.Delete(c.Request.Context(), ids.IDs); err != nil {
 		if errors.Is(err, domain.ErrTaskNotExists) {
 			api_handle.BadRequesResponse(c, "Task does not exist")
 		} else {
@@ -196,6 +208,36 @@ func (t *taskRoute) Delete(c *gin.Context) {
 	api_handle.SuccessResponse(c, "Delete ids: ["+strings.Join(helper.IntToString(ids.IDs), ",")+"] success")
 }
 
-func (t *taskRoute) Update(c *gin.Context) {
+func (route *taskRoute) Update(c *gin.Context) {
+	// Get ID from uri
+	var id IdUri
+	if err := c.ShouldBindUri(&id); err != nil {
+		api_handle.BadRequesResponse(c, "Id must be a integer")
+		return
+	}
 
+	// Get task information
+	var taskReq TaskUpdateReqStruct
+	if err := c.ShouldBind(&taskReq); err != nil {
+		api_handle.BadRequesResponse(c, "Some information is wrong")
+		return
+	}
+
+	// Tranfer
+	var new_task_info map[string]interface{}
+	var new_tags_add []int32
+	var new_tags_remove []int32
+	// TODO: Implement code here
+
+	// Update
+	if err := route.taskUsecase.Update(c.Request.Context(), id.ID, new_task_info, new_tags_add, new_tags_remove); err != nil {
+		if errors.Is(err, domain.ErrTaskNotExists) {
+			api_handle.NotFoundResponse(c, "Task with ID "+strconv.Itoa(int(id.ID))+" does not exist")
+		} else {
+			api_handle.ServerErrorResponse(c)
+		}
+		return
+	}
+
+	api_handle.SuccessResponse(c, nil)
 }

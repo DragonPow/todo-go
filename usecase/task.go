@@ -2,7 +2,6 @@ package usecase
 
 import (
 	"context"
-	"fmt"
 
 	"project1/domain"
 	"project1/util/db"
@@ -97,7 +96,22 @@ func (t *taskUsecase) Create(ctx context.Context, creator_id int32, args ...inte
 }
 
 func (t *taskUsecase) Update(ctx context.Context, id int32, args ...interface{}) error {
-	return fmt.Errorf("Implemeent needed")
+	isSuccess := false
+	tx := t.db.Db.Begin()
+
+	defer func() {
+		if isSuccess {
+			tx.Commit()
+		}
+		tx.Rollback()
+	}()
+
+	// Check user exists
+	if err := t.taskRepo.CheckExists(ctx, []int32{id}, tx); err != nil {
+		return err
+	}
+
+	return t.taskRepo.Update(ctx, id, args...)
 }
 
 func (t *taskUsecase) Delete(ctx context.Context, ids []int32) error {
