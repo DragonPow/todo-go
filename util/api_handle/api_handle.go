@@ -19,6 +19,16 @@ func BadRequesResponse(c *gin.Context, message string, args ...jsonResposne) {
 	c.JSON(http.StatusBadRequest, response)
 }
 
+func Unauthorized(c *gin.Context, message string, args ...jsonResposne) {
+	response := jsonResposne{"message": message}
+	if len(args) > 0 {
+		for _, v := range args {
+			response = concat2Map(response, v)
+		}
+	}
+	c.JSON(http.StatusUnauthorized, response)
+}
+
 func NotFoundResponse(c *gin.Context, message string, args ...jsonResposne) {
 	response := jsonResposne{"message": message}
 	if len(args) > 0 {

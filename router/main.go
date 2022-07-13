@@ -1,7 +1,9 @@
 package router
 
 import (
+	"errors"
 	"fmt"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
@@ -10,6 +12,7 @@ import (
 	usecase "project1/usecase"
 	"project1/util/api_handle"
 	db "project1/util/db"
+	"project1/util/jwt_handle"
 )
 
 type IdUri struct {
@@ -18,6 +21,10 @@ type IdUri struct {
 
 type IdsUri struct {
 	IDs []int32 `form:"ids"`
+}
+
+type dataToken struct {
+	user_id int32 `json:"user_id"`
 }
 
 type jsonResponse map[string]interface{}
@@ -34,7 +41,6 @@ func Init(server *gin.Engine, DB db.Database) {
 	BuildTaskRoute(server.Group("/tasks"), taskUsecase)
 	BuildTagRoute(server.Group("/tags"), tagUsecase)
 	BuildUserRoute(server.Group("/users"), userUsecase)
-
 }
 
 func handlePanic(c *gin.Context, routeName string) {
@@ -43,6 +49,52 @@ func handlePanic(c *gin.Context, routeName string) {
 		fmt.Println(r)
 		api_handle.ServerErrorResponse(c)
 	}
+}
+
+func getToken(c *gin.Context) (token string, err error) {
+	authorization := c.Request.Header.Get("Authorization")
+	if authorization == "" {
+		c.Abort()
+		return "", domain.ErrTokenRequired
+	}
+
+	// authorization = "Bearer " + token
+	parts := strings.Split(authorization, " ")
+	if parts[0] != "Bearer" {
+		return "", domain.ErrTokenFormatInvalid
+	}
+	c.Abort()
+
+	return parts[1], nil
+}
+
+func authenticateUser(c *gin.Context) (user_id int32, err error) {
+	// Get token
+	token, err := getToken(c)
+	if err != nil {
+		if errors.Is(err, domain.ErrTokenRequired) {
+			api_handle.Unauthorized(c, "Token is required")
+		} else if errors.Is(err, domain.ErrTokenFormatInvalid) {
+			api_handle.BadRequesResponse(c, "Token format is wrong")
+		} else {
+			api_handle.ServerErrorResponse(c)
+		}
+		c.Abort()
+		return 0, err
+	}
+
+	if token == "Admin" {
+		return 1, nil
+	}
+
+	// Parse token
+	data, err := jwt_handle.ParseToData(token)
+	if err != nil {
+		return 0, err
+	}
+
+	user_id = data.(dataToken).user_id
+	return user_id, nil
 }
 
 func getUserJsonResponse(user domain.User) jsonResponse {

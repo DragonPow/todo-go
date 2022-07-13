@@ -99,6 +99,12 @@ func (t *tagRepository) Delete(ctx context.Context, id int32, args ...interface{
 
 	tag := domain.Tag{ID: id}
 	if err := tx.Delete(&tag).Error; err != nil {
+		if pgError, ok := err.(*pgconn.PgError); ok && errors.Is(err, pgError) {
+			// Tag still another reference
+			if pgError.Code == "23503" {
+				return domain.ErrTagStillReference
+			}
+		}
 		return err
 	}
 

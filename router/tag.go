@@ -74,6 +74,8 @@ func (route *tagRoute) Delete(c *gin.Context) {
 	if err := route.tagUsecase.Delete(c, id.ID); err != nil {
 		if errors.Is(err, domain.ErrTagNotExists) {
 			api_handle.NotFoundResponse(c, "Tag with Id "+strconv.Itoa(int(id.ID))+" does not exist")
+		} else if errors.Is(err, domain.ErrTagStillReference) {
+			api_handle.BadRequesResponse(c, "Some task contains tag, please delete task before")
 		} else {
 			api_handle.ServerErrorResponse(c)
 		}

@@ -3,11 +3,13 @@ package router
 import (
 	"errors"
 	"strconv"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 
 	"project1/domain"
 	"project1/util/api_handle"
+	"project1/util/helper"
 )
 
 type taskRoute struct {
@@ -117,11 +119,26 @@ func (t *taskRoute) Create(c *gin.Context) {
 }
 
 func (t *taskRoute) DeleteAll(c *gin.Context) {
+	// Get creator_id
+	creator_id, err := authenticateUser(c)
+	if err != nil {
+		return
+	}
 
+	if err := t.taskUsecase.DeleteAll(c.Request.Context(), creator_id); err != nil {
+		if errors.Is(err, domain.ErrUserNotExists) {
+			api_handle.BadRequesResponse(c, "User is not exist")
+		} else {
+			api_handle.ServerErrorResponse(c)
+		}
+		return
+	}
+
+	api_handle.SuccessResponse(c, "Delete all task of user "+strconv.Itoa(int(creator_id))+" success")
 }
 
 func (t *taskRoute) Delete(c *gin.Context) {
-	// Get ID from uri
+	// Get ID from body
 	var ids IdsUri
 	if err := c.ShouldBind(&ids); err != nil {
 		api_handle.BadRequesResponse(c, "ID must be a integer")
@@ -137,7 +154,7 @@ func (t *taskRoute) Delete(c *gin.Context) {
 		return
 	}
 
-	api_handle.SuccessResponse(c, "Delete id success")
+	api_handle.SuccessResponse(c, "Delete ids: ["+strings.Join(helper.IntToString(ids.IDs), ",")+"] success")
 }
 
 func (t *taskRoute) Update(c *gin.Context) {

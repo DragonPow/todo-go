@@ -17,7 +17,7 @@ type Task struct {
 	CreatorId   int32 `form:"-"`
 	UserCreator User  `form:"-" gorm:"foreignKey:CreatorId;constrain:OnUpdate:NO ACTION,OnDelete:CASCADE"`
 
-	Tags []Tag `form:"tags" gorm:"many2many:task_tags;constrain:OnUpdate:NO ACTION,OnDelete:SET NULL"`
+	Tags []Tag `form:"tags" gorm:"many2many:task_tags"`
 }
 
 type TaskRepository interface {

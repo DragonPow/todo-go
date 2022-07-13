@@ -51,7 +51,7 @@ func (t *taskRepository) GetByUserId(ctx context.Context, creator_id int32, args
 
 	// Get all task by user id
 	var tasks []domain.Task
-	if err := tx.Where("cretor_id IN ?", creator_id).Find(&tasks).Error; err != nil {
+	if err := tx.Where("creator_id = ?", creator_id).Find(&tasks).Error; err != nil {
 		return nil, err
 	}
 
@@ -71,10 +71,13 @@ func (t *taskRepository) Create(ctx context.Context, creator_id int32, args ...i
 	}
 
 	new_task := args[len(args)-1].(domain.Task)
+
+	// Create
 	if err := tx.Omit("Tags").Create(&new_task).Error; err != nil {
 		return domain.Task{}, err
 	}
 
+	// Add tags to task
 	if err := tx.Model(&new_task).Association("Tags").Append(&new_task.Tags); err != nil {
 		return domain.Task{}, err
 	}
@@ -90,12 +93,25 @@ func (t *taskRepository) Update(ctx context.Context, id int32, args ...interface
 	return fmt.Errorf("Implement needed")
 }
 
+func SearchUserByIds(ctx context.Context, ids []int32, db *gorm.DB) (tasks []domain.Task, err error) {
+	if err = db.Where("id IN ?", ids).Find(&tasks).Error; err != nil {
+		return nil, err
+	}
+	return tasks, nil
+}
+
 func (t *taskRepository) Delete(ctx context.Context, ids []int32, args ...interface{}) error {
 	tx, err := t.GetTransaction(args, 0)
 	if err != nil {
 		return err
 	}
 
+	// Delete tags associated with tasks
+	for _, id := range ids {
+		tx.Model(&domain.Task{ID: id}).Association("Tags").Clear()
+	}
+
+	// Delete tasks
 	if err := tx.Delete(&domain.Task{}, ids).Error; err != nil {
 		return err
 	}
@@ -109,13 +125,15 @@ func (t *taskRepository) CheckExists(ctx context.Context, ids []int32, args ...i
 		return err
 	}
 
+	// Find by IDs
 	var tasks []domain.Task
 	if err := tx.Where("Id IN ?", ids).Find(&tasks).Error; err != nil {
 		return err
 	}
 
+	// Check length of tasks found is equal ids
 	if len(tasks) != len(ids) {
-		return domain.ErrTagNotExists
+		return domain.ErrTaskNotExists
 	}
 
 	return nil
