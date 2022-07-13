@@ -9,6 +9,7 @@ import (
 
 	"project1/domain"
 	"project1/util/api_handle"
+	"project1/util/jwt_handle"
 )
 
 type loginJson struct {
@@ -52,10 +53,9 @@ func (route *userRoute) Login(c *gin.Context) {
 	}
 
 	// Build token
-	// token := make(map[string]interface{})
-	// token["token"] = "123"
+	token := jwt_handle.GenerateToken(account.ID)
 
-	api_handle.SuccessResponse(c, getUserJsonResponse(account))
+	api_handle.SuccessResponse(c, getUserJsonResponse(account), map[string]interface{}{"token": token})
 }
 
 func (route *userRoute) GetByID(c *gin.Context) {

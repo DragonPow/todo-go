@@ -5,10 +5,12 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/jackc/pgconn"
 	"gorm.io/gorm"
 
 	"project1/domain"
 	"project1/util/db"
+	"project1/util/helper"
 )
 
 type taskRepository struct {
@@ -22,11 +24,37 @@ func NewTaskRepository(conn db.Database) domain.TaskRepository {
 }
 
 func (t *taskRepository) Fetch(ctx context.Context, user_id int32, start_index int32, number int32, args ...interface{}) ([]domain.Task, error) {
-	return nil, fmt.Errorf("Implement needed")
+	tx, err := t.GetTransaction(args, 1)
+	if err != nil {
+		return nil, err
+	}
+
+	conditions := args[len(args)-1].(map[string]interface{})
+
+	var tasks []domain.Task
+	var queryString string
+	queryArgs := []string{}
+
+	if value, ok := conditions["name"]; ok {
+		queryString += "name LIKE ?"
+		queryArgs = append(queryArgs, value.(string))
+	}
+	if tags, ok := conditions["tags"]; ok && tags != nil {
+		if queryString != "" {
+			queryString += " AND tags IN ?"
+			queryArgs = append(queryArgs, helper.IntToString(tags.([]int32))...)
+		}
+	}
+
+	if err := tx.Where(queryString, queryArgs).Limit(int(number)).Offset(int(start_index)).Find(&tasks).Error; err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
 }
 
 func (t *taskRepository) GetByID(ctx context.Context, id int32, args ...interface{}) (domain.Task, error) {
-	tx, err := t.GetTransaction(args, 1)
+	tx, err := t.GetTransaction(args, 0)
 	if err != nil {
 		return domain.Task{}, err
 	}
@@ -73,14 +101,20 @@ func (t *taskRepository) Create(ctx context.Context, creator_id int32, args ...i
 	new_task := args[len(args)-1].(domain.Task)
 
 	// Create
-	if err := tx.Omit("Tags").Create(&new_task).Error; err != nil {
+	if err := tx.Create(&new_task).Error; err != nil {
+		if pgError, ok := err.(*pgconn.PgError); ok && errors.Is(err, pgError) {
+			// Duplicate value
+			if pgError.Code == "23503" {
+				return domain.Task{}, domain.ErrTagNotExists
+			}
+		}
 		return domain.Task{}, err
 	}
 
-	// Add tags to task
-	if err := tx.Model(&new_task).Association("Tags").Append(&new_task.Tags); err != nil {
-		return domain.Task{}, err
-	}
+	// // Add tags to task
+	// if err := tx.Model(&new_task).Association("Tags").Append(&new_task.Tags); err != nil {
+	// 	return domain.Task{}, err
+	// }
 
 	// if err := tx.Model(&new_task).Association("UserCreator").Replace(&new_task.UserCreator); err != nil {
 	// 	return domain.Task{}, err

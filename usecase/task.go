@@ -24,8 +24,30 @@ func NewTaskUsecase(db db.Database, t domain.TaskRepository, u domain.UserReposi
 	}
 }
 
-func (t *taskUsecase) Fetch(ctx context.Context, user_id int32, start_index int32, number int32, conditions ...interface{}) ([]domain.Task, error) {
-	return nil, fmt.Errorf("Implemeent needed")
+func (t *taskUsecase) Fetch(ctx context.Context, user_id int32, start_index int32, number int32, args ...interface{}) ([]domain.Task, error) {
+	isSuccess := false
+	tx := t.db.Db.Begin()
+
+	defer func() {
+		if isSuccess {
+			tx.Commit()
+		} else {
+			tx.Rollback()
+		}
+	}()
+
+	// Check user exists
+	if _, err := t.userRepo.GetByID(ctx, user_id, tx); err != nil {
+		return nil, err
+	}
+
+	// Fetch
+	tasks, err := t.taskRepo.Fetch(ctx, user_id, start_index, number, append([]interface{}{tx}, args...)...)
+	if err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
 }
 
 func (t *taskUsecase) GetByID(ctx context.Context, id int32) (domain.Task, error) {

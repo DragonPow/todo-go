@@ -2,30 +2,34 @@ package jwt_handle
 
 import (
 	"project1/domain"
+	"time"
 
 	"github.com/golang-jwt/jwt/v4"
 )
 
 var (
-	jwt_method = jwt.SigningMethodES256
+	jwt_method = jwt.SigningMethodHS256
+	key        = []byte("vungocthach")
 )
 
+type any interface{}
+
 type customClaim struct {
-	data interface{} `json:"data"`
+	data int32 `json:"data"`
 	jwt.StandardClaims
 }
 
-func GenerateToken(data interface{}) string {
+func GenerateToken(user_id int32) string {
 	claims := customClaim{
-		data,
-		jwt.StandardClaims{
-			ExpiresAt: 60 * 2, // 2 minutes
+		data: user_id,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: 60, // 2 minutes
 		},
 	}
 
 	token := jwt.NewWithClaims(jwt_method, claims)
 
-	tokenString, err := token.SignedString(token)
+	tokenString, err := token.SignedString(key)
 	if err != nil {
 		panic(err)
 	}
@@ -33,16 +37,32 @@ func GenerateToken(data interface{}) string {
 	return tokenString
 }
 
-func ParseToData(token string) (interface{}, error) {
-	jwt_token, err := jwt.ParseWithClaims(token, &customClaim{}, func(token *jwt.Token) (interface{}, error) {
-		return nil, nil
+func ParseToData(tokenString string) (data any, err error) {
+	at(time.Unix(0, 0), func() {
+		jwt_token, jwt_err := jwt.ParseWithClaims(tokenString, &customClaim{}, func(token *jwt.Token) (interface{}, error) {
+			return key, nil
+		})
+
+		claims, ok := jwt_token.Claims.(*customClaim)
+
+		if ok && jwt_token.Valid {
+			data = claims.data
+			err = jwt_err
+			return
+		} else {
+			err = domain.ErrTokenInvalid
+			data = nil
+		}
 	})
 
-	claims, ok := jwt_token.Claims.(*customClaim)
+	return data, err
+}
 
-	if ok && jwt_token.Valid {
-		return claims.data, err
-	} else {
-		return nil, domain.ErrTokenInvalid
+// Override time value for tests.  Restore default value after.
+func at(t time.Time, f func()) {
+	jwt.TimeFunc = func() time.Time {
+		return t
 	}
+	f()
+	jwt.TimeFunc = time.Now
 }

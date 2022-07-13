@@ -61,9 +61,9 @@ func getToken(c *gin.Context) (token string, err error) {
 	// authorization = "Bearer " + token
 	parts := strings.Split(authorization, " ")
 	if parts[0] != "Bearer" {
+		c.Abort()
 		return "", domain.ErrTokenFormatInvalid
 	}
-	c.Abort()
 
 	return parts[1], nil
 }
@@ -90,6 +90,8 @@ func authenticateUser(c *gin.Context) (user_id int32, err error) {
 	// Parse token
 	data, err := jwt_handle.ParseToData(token)
 	if err != nil {
+		api_handle.Unauthorized(c, "Token is invalid")
+		c.Abort()
 		return 0, err
 	}
 
