@@ -17,10 +17,10 @@ type taskRoute struct {
 }
 
 type fetchReqStruct struct {
-	name       string  `form:"name"`
-	tags       []int32 `form:"tags"`
-	startIndex int32   `form:"startIndex"`
-	number     int32   `form:"number"`
+	Name       string  `form:"name" json:"name"`
+	Tags       []int32 `form:"tags" json:"tags"`
+	StartIndex int32   `form:"startIndex" json:"startIndex"`
+	Number     int32   `form:"number" json:"number"`
 }
 
 func BuildTaskRoute(router *gin.RouterGroup, t domain.TaskUsecase) {
@@ -43,21 +43,21 @@ func (t *taskRoute) Fetch(c *gin.Context) {
 	}
 
 	var reqJson fetchReqStruct
-	if err := c.BindQuery(&reqJson); err != nil {
+	if err := c.ShouldBindQuery(&reqJson); err != nil {
 		api_handle.BadRequesResponse(c, "Some information is wrong")
 		return
 	}
 
 	// Define args
 	args := make(map[string]interface{})
-	if strings.TrimSpace(reqJson.name) != "" {
-		args["name"] = strings.TrimSpace(reqJson.name)
+	if strings.TrimSpace(reqJson.Name) != "" {
+		args["name"] = strings.TrimSpace(reqJson.Name)
 	}
-	// if reqJson.tags != nil {
-	// 	args["tags"] = reqJson.tags
+	// if reqJson.Tags != nil {
+	// 	args["tags"] = reqJson.Tags
 	// }
 
-	tasks, err := t.taskUsecase.Fetch(c.Request.Context(), creator_id, reqJson.startIndex, reqJson.number, args)
+	tasks, err := t.taskUsecase.Fetch(c.Request.Context(), creator_id, reqJson.StartIndex, reqJson.Number, args)
 	if err != nil {
 		if errors.Is(err, domain.ErrUserNotExists) {
 			api_handle.BadRequesResponse(c, "User is not exists")

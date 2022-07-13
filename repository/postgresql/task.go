@@ -10,7 +10,6 @@ import (
 
 	"project1/domain"
 	"project1/util/db"
-	"project1/util/helper"
 )
 
 type taskRepository struct {
@@ -33,20 +32,26 @@ func (t *taskRepository) Fetch(ctx context.Context, user_id int32, start_index i
 
 	var tasks []domain.Task
 	var queryString string
-	queryArgs := []string{}
+	queryArgs := []interface{}{}
 
 	if value, ok := conditions["name"]; ok {
 		queryString += "name LIKE ?"
-		queryArgs = append(queryArgs, value.(string))
+		queryArgs = append(queryArgs, "%"+value.(string)+"%")
 	}
-	if tags, ok := conditions["tags"]; ok && tags != nil {
-		if queryString != "" {
-			queryString += " AND tags IN ?"
-			queryArgs = append(queryArgs, helper.IntToString(tags.([]int32))...)
-		}
+	// if tags, ok := conditions["tags"]; ok && tags != nil {
+	// 	if queryString != "" {
+	// 		queryString += " AND "
+	// 	}
+
+	// 	queryString += "tags IN ?"
+	// 	queryArgs = append(queryArgs, tags.([]int32))
+	// }
+
+	if queryString != "" {
+		tx = tx.Where(queryString, queryArgs...)
 	}
 
-	if err := tx.Where(queryString, queryArgs).Limit(int(number)).Offset(int(start_index)).Find(&tasks).Error; err != nil {
+	if err := tx.Preload("Tags").Limit(int(number)).Offset(int(start_index)).Find(&tasks).Error; err != nil {
 		return nil, err
 	}
 
